@@ -13,3 +13,16 @@
 - Two model fixes found by edge-case testing: a leveraged pot that goes below zero now stays at 0 (margin call; card + takeaway say "WIPED OUT"), and the money-weighted return card shows "—" for a 0-year window (startYear 2024) instead of a meaningless solver bound.
 - Validation: all script blocks pass Node syntax check; an independent Node recomputation of a 1930 lump-sum matched the page to the dollar ($7,637,517 US / $19,410,098 SE nominal); browser edge tests (200% leverage, startYear 2024, nominal/no-dividends) run with zero console errors.
 - Deployment: committed and pushed to Emil200222/sp500-vs-omxs30; Vercel auto-deployed from the push (verified a new Ready production deployment appeared without a manual deploy command).
+
+## 2026-11-16 — Model quality upgrade (second modification, "make the model as good as it can be")
+- Asked: improve the simulation model as much as possible.
+- Model: GLM-5.3-Flash Free (opencode), via OpenCode.
+- Done (all inside the SIM block; backups/backup-3.html taken before the change):
+  1. Swedish dividends 1930-1986 now use the year-by-year yields actually recorded in Riksbank vol 2, Table A6.2 (1.8-6.4%/yr, avg ~4.2%) instead of a constant estimate; the slider now applies only to 1987-2024 (help text and "Nominal dollars" preset updated).
+  2. Salary contributions use the mid-year convention (they earn on average half of that year's return); the IRR solver was updated to match.
+  3. New "Yearly fee" slider (default 0.2%, deducted from both pots; set 0 for pure market returns).
+  4. New "Worst single year" card: worst calendar year incl. dividends + biggest peak-to-trough fall in real terms, per market.
+  5. New "If history were reshuffled" card: 1,000 i.i.d. bootstrap runs of the chosen window's own years (fixed seed 2026, reproducible) — how often the US beats Sweden when the order of the years changes.
+- Bugs found and fixed during verification: the bootstrap win-count compared US dollars with Swedish kronor, and printed the kronor median with a $ sign — both caught by an independent Node replica of the whole model (including the page's seeded RNG) before deployment, then fixed and re-verified.
+- Validation: page matches the independent Node replica exactly on all 8 cards for three scenarios (default 1930, 200% leverage, single-year 2024 window) and the fee=0 baseline reproduces the previously verified $7,637,517; all script blocks pass syntax check; zero console errors in the browser.
+- Deployment: push auto-deployed on Vercel (new Ready production build, no manual deploy); live site re-verified with the new cards.
