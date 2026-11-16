@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S&P 500 vs OMXS30 — historical returns</title>
+<!--
+  SIMULATION STARTER TEMPLATE (Meta-science course, University of Innsbruck, Hackathon 2)
+
+  HOW THIS FILE WORKS
+  - Everything you (or the AI) need to change is in ONE place: the  const SIM = { ... }  block below,
+    which starts at the marker line with "EDIT BELOW" and ends at the marker line with "EDIT ABOVE" (further down).
+  - The second script (its first line is the marker that says not to edit below it) draws the page: sliders,
+    chart, cards, presets, takeaway and methods box. Leave it alone.
+  - Open this file by double-clicking it. After each change, reload the browser tab (F5; on a Mac Cmd+R).
+    Reloading keeps your slider settings; the button "Reset to start values" brings back the start values.
+
+  THE SIM BLOCK HAS THESE PARTS (the same parts Cashculate and Metaventory use):
+    meta         title, the question the simulation answers, which platform it is for
+    inputs       the sliders: id, label, min, max, step, value (start value), unit, help
+    presets      2-3 named starting points; each sets some slider values
+    calculate(p) THE MODEL. Gets the slider values as p (e.g. p.years) and returns:
+                   { cards: [{label, value, note}],
+                     chart: { type: "line" or "bar", title, xLabel, yLabel,
+                              x: [labels or numbers], series: [{name, values: [...]}] } }
+    takeaway(p, r) one or two plain-language sentences about what the result means (r = what calculate returned)
+    methodology  how: one paragraph; assumptions: a list; references: a list of real, checkable sources
+
+  HELPERS YOU CAN USE INSIDE calculate (already written, tested):
+    makeRng(seed)   -> a function that returns a random number between 0 and 1, the same every time for the same seed
+    randNormal(rng) -> a random number from a normal distribution (mean 0, SD 1)
+    normCdf(z)      -> the probability that a normal (0,1) value is below z
+    round(x, d)     -> x rounded to d decimals
+    range(a, b, step) -> [a, a+step, ..., b]
+-->
+<style>
+  :root { --ink:#1c1917; --ink2:#57534e; --line:#e7e5e4; --bg:#fafaf9; --card:#fff; --accent:#b45309; --accent2:#1d4ed8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Georgia, "Times New Roman", serif; background:var(--bg); color:var(--ink); }
+  header { padding:28px 32px 8px; max-width:1200px; margin:auto; }
+  header h1 { margin:0 0 6px; font-size:30px; }
+  header p { margin:0; color:var(--ink2); font-size:18px; }
+  .tag { display:inline-block; font:12px/1 system-ui, sans-serif; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; }
+  main { display:grid; grid-template-columns: 320px 1fr; gap:24px; padding:16px 32px 40px; max-width:1200px; margin:auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .panel h2 { font:600 13px/1 system-ui, sans-serif; letter-spacing:.06em; text-transform:uppercase; color:var(--ink2); margin:0 0 14px; }
+  .input { margin-bottom:18px; font-family: system-ui, sans-serif; }
+  .input label { display:flex; justify-content:space-between; font-size:14px; font-weight:600; }
+  .input .val { color:var(--accent); font-variant-numeric: tabular-nums; }
+  .input input[type=range] { width:100%; accent-color: var(--accent); }
+  .input .help { font-size:12px; color:var(--ink2); margin-top:2px; }
+  .presets { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+  .presets button { font:13px system-ui, sans-serif; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .presets button:hover, .presets button.on { border-color:var(--accent); color:var(--accent); }
+  .preset-note { font:13px system-ui, sans-serif; color:var(--ink2); min-height:18px; margin:-6px 0 12px; }
+  .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:12px; margin-bottom:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .card .l { font:12px system-ui, sans-serif; color:var(--ink2); text-transform:uppercase; letter-spacing:.05em; }
+  .card .v { font-size:28px; margin-top:4px; font-variant-numeric: tabular-nums; }
+  .card .n { font:12px system-ui, sans-serif; color:var(--ink2); margin-top:2px; }
+  .takeaway { border-left:4px solid var(--accent); background:#fffbeb; padding:12px 16px; border-radius:6px; font-size:18px; margin:16px 0; }
+  details { margin-top:16px; font-family: system-ui, sans-serif; font-size:14px; line-height:1.5; }
+  summary { cursor:pointer; font-weight:600; }
+  svg text { font-family: system-ui, sans-serif; font-size:12px; fill: var(--ink2); }
+  .legend { font:13px system-ui, sans-serif; display:flex; gap:16px; flex-wrap:wrap; margin-top:4px; }
+  .legend span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; background:var(--c); }
+  .error { background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:12px; border-radius:8px; font:14px system-ui, sans-serif; white-space:pre-wrap; }
+  .reset { font:13px system-ui, sans-serif; padding:6px 10px; border-radius:8px; border:1px solid var(--line); background:#fff; cursor:pointer; margin-bottom:12px; }
+  footer { max-width:1200px; margin:auto; padding:0 32px 32px; font:12px system-ui, sans-serif; color:var(--ink2); }
+</style>
+<script>
+// Shows an error that stops the page from starting (for example a typo in the SIM block) on the page itself.
+window.addEventListener("error", function (e) {
+  if (window.__shownStartError) return; window.__shownStartError = true;
+  var show = function () { var d = document.createElement("div"); d.className = "error"; d.style.margin = "16px 32px";
+    d.textContent = "The page could not start because of an error in the SIM block:\n" + e.message + (e.lineno ? "  (line " + e.lineno + " of my-simulation.html)" : "") + "\n\nCopy this message into OpenCode and ask it to fix the problem. Change only the SIM block.";
+    document.body.prepend(d); };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show); else show();
+});
+</script>
+</head>
+<body>
+<header>
+  <div class="tag" id="platform"></div>
+  <h1 id="title"></h1>
+  <p id="question"></p>
+</header>
+<main>
+  <section class="panel"><h2>Settings</h2><button id="reset" class="reset">↺ Reset to start values</button><div class="presets" id="presets"></div><div class="preset-note" id="presetNote"></div><div id="inputs"></div></section>
+  <section>
+    <div class="cards" id="cards"></div>
+    <div class="panel"><h2 id="chartTitle">Chart</h2><div id="chart"></div><div class="legend" id="legend"></div></div>
+    <div class="takeaway" id="takeaway"></div>
+    <details open><summary>How this simulation works</summary><div id="method"></div></details>
+  </section>
+</main>
+<footer id="footer"></footer>
+
+<script>
+// ===== EDIT BELOW ===========================================================================
+// Historical data, one value per year, 1987..2024 (38 values, aligned with the YEARS array).
+const YEARS = Array.from({ length: 2024 - 1987 + 1 }, (_, i) => 1987 + i);
+
+// S&P 500 total return in %, dividends reinvested (standard published annual figures).
+const SPX_TR = [5.25, 16.61, 31.69, -3.17, 30.47, 7.62, 10.08, 0.97, 37.58, 22.96, 33.36, 28.58, 21.04, -9.11, -11.88, -22.10, 28.70, 10.87, 4.91, 15.80, 5.49, -37.00, 26.46, 15.06, 2.11, 16.00, 32.39, 13.69, 1.38, 11.96, 21.83, -4.38, 31.49, 18.40, 28.71, -18.11, 26.29, 25.02];
+
+// OMXS30 price return in % (Wikipedia, from Yahoo Finance data; the index starts Sep 1986).
+const OMXS30 = [-16.67, 51.81, 30.60, -27.89, 11.02, 7.64, 53.08, 3.42, 18.83, 38.86, 27.79, 16.94, 70.96, -11.92, -19.85, -41.74, 29.01, 16.59, 29.40, 19.51, -5.74, -38.75, 43.69, 21.42, -14.51, 11.83, 20.66, 9.87, -1.21, 4.86, 3.94, -10.67, 25.78, 5.81, 29.07, -15.55, 17.26, 3.63];
+
+// US inflation in % (CPI, annual average, US Bureau of Labor Statistics).
+const CPI_US = [3.65, 4.14, 4.82, 5.40, 4.21, 3.01, 2.99, 2.56, 2.83, 2.95, 2.29, 1.56, 2.21, 3.38, 2.83, 1.60, 2.27, 2.68, 3.39, 3.23, 2.85, 3.85, -0.36, 1.64, 3.16, 2.07, 1.46, 1.62, 0.12, 1.26, 2.13, 2.44, 1.81, 1.23, 4.70, 8.00, 4.12, 2.95];
+
+// Swedish inflation in % (CPI, annual average, Statistics Sweden / SCB).
+const CPI_SE = [4.2, 6.6, 6.6, 9.0, 9.3, 2.3, 4.6, 2.2, 2.5, 0.5, 0.9, -0.1, 0.6, 1.2, 2.7, 1.9, 1.9, 0.4, 0.5, 1.4, 2.2, 3.3, -0.3, 1.9, 3.0, 0.9, 0.1, -0.1, 0.7, 1.0, 1.9, 2.0, 1.7, 0.5, 2.9, 8.4, 5.7, 1.7];
+
+// Cost of capital: US short-term interest rate in % (3-month Treasury bill / fed funds, annual average, approximate).
+const RATE_US = [5.8, 7.0, 8.1, 7.5, 5.4, 3.5, 3.0, 4.3, 5.5, 5.0, 5.1, 4.8, 4.7, 5.8, 3.5, 1.6, 1.0, 1.3, 3.2, 4.8, 4.4, 1.4, 0.1, 0.2, 0.1, 0.1, 0.1, 0.0, 0.0, 0.3, 1.0, 2.0, 2.1, 0.4, 0.0, 2.0, 5.1, 5.0];
+
+// Cost of capital: Swedish short-term interest rate in % (Riksbank repo rate / STIBOR, annual average, approximate; negative 2015-2019).
+const RATE_SE = [8.4, 8.9, 9.5, 10.5, 10.0, 12.9, 8.4, 6.5, 8.5, 5.2, 4.1, 4.0, 3.2, 3.6, 3.6, 4.1, 3.4, 2.1, 1.7, 2.5, 3.8, 4.3, 0.4, 0.6, 2.3, 1.4, 1.0, 0.2, -0.2, -0.5, -0.5, -0.5, -0.2, 0.0, 0.0, 1.6, 3.9, 3.4];
+
+// Average salaries per year: US average annual wage in $ (Social Security Administration, National Average Wage Index, approximate for recent years).
+const SALARY_US = [18426, 19334, 20099, 21449, 21911, 22959, 23132, 23753, 24705, 25913, 27220, 28861, 30469, 32154, 32921, 33252, 34064, 35648, 36952, 38651, 40405, 40947, 40711, 41673, 42979, 44321, 45027, 46481, 48098, 49630, 50321, 52145, 54099, 55828, 60575, 63795, 67586, 69900];
+
+// Average salaries per year: Swedish average monthly wage (SCB, approximate) × 12, in SEK.
+const SALARY_SE = [99600, 108000, 117600, 129600, 144000, 159600, 168000, 177600, 186000, 193200, 202800, 213600, 225600, 238800, 253200, 267600, 279600, 290400, 301200, 315600, 331200, 345600, 356400, 368400, 381600, 397200, 410400, 422400, 438000, 454800, 471600, 490800, 511200, 525600, 544800, 577200, 614400, 636000];
+
+const fmtMoney = (v, cur) => (cur < 0 ? "-" : "") + (cur === "$" ? "$" : cur) + round(Math.abs(v), 0).toLocaleString("en");
+const compact = v => Math.abs(v) >= 1e6 ? round(v / 1e6, 1) + "M" : Math.abs(v) >= 1e3 ? round(v / 1e3, 0) + "k" : round(v, 0).toString();
+
+// Everything is shown in dollars of today: the krona pot is converted at today's rate (SEK per USD, ~Nov 2026).
+const FX_TODAY = 9.9;
+
+const SIM = {
+  meta: {
+    title: "S&P 500 vs OMXS30 — what did history actually pay?",
+    question: "You put the same amount of money into the US market (S&P 500) and the Swedish market (OMXS30) in a year of your choice. Which one paid more after inflation — and what does borrowing to invest more (leverage) really cost in each country?",
+    platform: "Cashculate",            // "Cashculate" (finance) or "Metaventory" (meta-science)
+    author: "Emil",
+  },
+  inputs: [
+    { id: "start",     label: "Starting amount",        min: 100, max: 100000, step: 100, value: 1000, unit: "",  help: "Same money in both markets: dollars in the S&P 500, and the same amount converted to kronor (at today's rate, ~9.9 kr per $) for the OMXS30" },
+    { id: "startYear", label: "Starting year",          min: 1987, max: 2024,  step: 1,   value: 1987, unit: "",  help: "The year you invest; the simulation runs to 2024 using real historical returns" },
+    { id: "monthlyPct", label: "Monthly investing",     min: 0,    max: 50,    step: 1,   value: 10,   unit: "%", help: "Of the average salary each year: the US investor saves this share of US average wages into the S&P 500, the Swedish investor the same share of Swedish average wages into the OMXS30" },
+    { id: "real",      label: "Inflation-corrected",    min: 0,    max: 1,     step: 1,   value: 1,    unit: "",  help: "1 = values shown in today's money, using US CPI for the S&P 500 and Swedish CPI (SCB) for the OMXS30. 0 = nominal values" },
+    { id: "divSE",     label: "OMXS30 dividend yield",  min: 0,    max: 5,     step: 0.25, value: 3.5, unit: "%", help: "Added to the OMXS30 price returns to approximate the total-return index (OMXS30GI); Swedish large caps paid ~3-4% a year. Set 0 to compare pure price indexes" },
+    { id: "leverage",  label: "Leverage",               min: 0,    max: 200,   step: 10,  value: 0,    unit: "%", help: "Borrowed money added ON TOP of your investment, rebalanced every year. It costs interest at each country's own historical rate (see the card)" },
+  ],
+  presets: [
+    { name: "Full history",        values: { startYear: 1987, leverage: 0, real: 1 }, note: "Invest in 1987, ride the whole 1987-2024 ride" },
+    { name: "From the dot-com peak", values: { startYear: 2000 },                        note: "Starting in 2000 catches the dot-com crash and 2008" },
+    { name: "2× leverage",         values: { leverage: 100 },                            note: "Borrowed as much again — watch the interest bill and the swings" },
+    { name: "Nominal, no dividends", values: { real: 0, divSE: 0 },                       note: "Pure price indexes, before inflation" },
+    { name: "Save 30% of salary",  values: { monthlyPct: 30 },                           note: "A disciplined saver: 30% of the average salary, every month, every year" },
+  ],
+  calculate(p) {
+    const y0 = Math.round(p.startYear), y1 = 2024;
+    const idx0 = YEARS.indexOf(y0);
+    const L = p.leverage / 100;          // borrowed money added on top of the investment
+    const divSE = p.divSE / 100;         // dividend yield added to OMXS30 price returns
+    const real = p.real === 1;
+
+    const x = [], spNom = [], seNom = [], spReal = [], seReal = [];
+    const flowsUS = [], flowsSE = [];
+    let sp = p.start, se = p.start * FX_TODAY, cumUS = 1, cumSE = 1;
+    let sumUS = 0, sumSE = 0, n = 0, totUS = 0, totSE = 0;
+    for (let i = idx0; i < YEARS.length; i++) {
+      const y = YEARS[i];
+      const rSP = SPX_TR[i] / 100;                     // S&P 500 total return this year
+      const rSE = OMXS30[i] / 100 + divSE;             // OMXS30 price return + estimated dividends
+      const iUS = RATE_US[i] / 100;                    // US cost of borrowing this year
+      const iSE = RATE_SE[i] / 100;                    // Swedish cost of borrowing this year
+      // Salary saving: the slider's share of each year's average salary, invested during the year
+      const cUS = p.monthlyPct / 100 * SALARY_US[i];
+      const cSE = p.monthlyPct / 100 * SALARY_SE[i];
+      flowsUS.push({ t: i - idx0, amt: cUS, cum: 0 });
+      flowsSE.push({ t: i - idx0, amt: cSE, cum: 0 });
+      sp += cUS; se += cSE; totUS += cUS; totSE += cSE;
+      // Leverage: exposure grows with the market, the debt accrues interest; the borrowed share is reset every year
+      sp *= (1 + L) * (1 + rSP) - L * (1 + iUS);
+      se *= (1 + L) * (1 + rSE) - L * (1 + iSE);
+      cumUS *= 1 + CPI_US[i] / 100;
+      cumSE *= 1 + CPI_SE[i] / 100;
+      flowsUS[flowsUS.length - 1].cum = cumUS;
+      flowsSE[flowsSE.length - 1].cum = cumSE;
+      sumUS += RATE_US[i]; sumSE += RATE_SE[i]; n++;
+      x.push(y); spNom.push(sp); seNom.push(se / FX_TODAY);
+      spReal.push(sp / cumUS); seReal.push(se / cumSE / FX_TODAY);
+    }
+    const spEndN = spNom[spNom.length - 1], seEndN = seNom[seNom.length - 1];
+    const spEndR = spReal[spReal.length - 1], seEndR = seReal[seReal.length - 1];
+    const years = x.length - 1;
+    // Money-weighted yearly return (IRR): with salary contributions flowing in, a simple end/start CAGR would be inflated
+    const irr = (finalVal, flows, isReal, scale) => {
+      if (!(finalVal > 0)) return NaN;
+      const gap = r => {
+        let v = p.start * Math.pow(1 + r, years);
+        for (const fl of flows) {
+          const a = (isReal ? fl.amt / (fl.cum || 1) : fl.amt) * scale;
+          v += a * Math.pow(1 + r, years - fl.t);
+        }
+        return v - finalVal;
+      };
+      let lo = -0.95, hi = 3;
+      for (let it = 0; it < 80; it++) { const mid = (lo + hi) / 2; if (gap(mid) > 0) hi = mid; else lo = mid; }
+      return ((lo + hi) / 2) * 100;
+    };
+    const irrUS = irr(spEndN, flowsUS, false, 1);
+    const irrSE = irr(seEndN, flowsSE, false, 1 / FX_TODAY);
+    const irrUSr = irr(spEndR, flowsUS, true, 1);
+    const irrSEr = irr(seEndR, flowsSE, true, 1 / FX_TODAY);
+    const multUS = round(spEndN / (p.start + totUS), 1), multSE = round(seEndN / (p.start + totSE / FX_TODAY), 1);
+    const pct = v => isFinite(v) ? round(v, 1) + "%" : "—";
+
+    const cards = [
+      { label: "S&P 500 end value", value: fmtMoney(spEndN, "$"), note: "nominal, " + y0 + "–2024" },
+      { label: "OMXS30 end value", value: fmtMoney(seEndN, "$"), note: "kr " + compact(seEndN * FX_TODAY) + " converted at today's rate" },
+      real
+        ? { label: "S&P 500 real return", value: pct(irrUSr), note: "a year after US inflation · end pot = " + multUS + "× the money put in" }
+        : { label: "S&P 500 nominal return", value: pct(irrUS), note: "a year · end pot = " + multUS + "× the money put in" },
+      real
+        ? { label: "OMXS30 real return", value: pct(irrSEr), note: "a year after Swedish inflation · end pot = " + multSE + "× the money put in" }
+        : { label: "OMXS30 nominal return", value: pct(irrSE), note: "a year · end pot = " + multSE + "× the money put in" },
+      { label: "Cost of borrowed money", value: "US " + round(sumUS / n, 1) + "% · SE " + round(sumSE / n, 1) + "%", note: "average yearly interest rate " + y0 + "–2024, charged on " + p.leverage + "% leverage" },
+      { label: "Added from salary", value: "$" + compact(totUS) + " · $" + compact(totSE / FX_TODAY), note: p.monthlyPct + "% of average salaries (US · Sweden, converted at today's rate)" },
+    ];
+
+    const series = real
+      ? [ { name: "S&P 500 (real $, after US inflation)", values: spReal },
+          { name: "OMXS30 (real $, after Swedish inflation)", values: seReal } ]
+      : [ { name: "S&P 500 ($, nominal)", values: spNom },
+          { name: "OMXS30 ($, converted at today's rate)", values: seNom } ];
+
+    return {
+      cards,
+      chart: { type: "line", title: "Growth of your starting amount, " + y0 + "–2024" + (real ? " (real, in " + y0 + " dollars)" : " (nominal dollars)"),
+               xLabel: "Year", yLabel: "Value ($)", x, series },
+    };
+  },
+  takeaway(p, r) {
+    const y0 = Math.round(p.startYear), years = 2024 - y0;
+    let s = "From " + y0 + " to 2024 (" + years + " years), a " + fmtMoney(p.start, "$") + " lump sum" + (p.monthlyPct > 0 ? " plus " + p.monthlyPct + "% of the average salary saved every year" : "") + " grew to " + r.cards[0].value + " in the S&P 500 and " + r.cards[1].value + " in the OMXS30 — both shown in dollars.";
+    if (p.monthlyPct > 0) {
+      s += " Saving " + p.monthlyPct + "% of the average salary every year added " + r.cards[5].value + " (US · Sweden) of new money.";
+    }
+    if (p.real === 1) {
+      const us = parseFloat(r.cards[2].value), se = parseFloat(r.cards[3].value);
+      if (isFinite(us) && isFinite(se)) {
+        s += " After inflation that is about " + us + "% a year (US) versus " + se + "% a year (Sweden) — " + (us > se ? "the US market won" : "the Swedish market won") + ".";
+      }
+    }
+    if (p.leverage > 0) {
+      s += " With " + p.leverage + "% leverage both markets got bigger swings, and the borrowed money cost the historical US or Swedish interest rate every year — cheap borrowing years helped, but crash years (2000–2002, 2008, 2022) hit a leveraged portfolio much harder.";
+    }
+    return s;
+  },
+  methodology: {
+    how: "The starting amount is invested in the chosen starting year and then follows the real annual returns, year by year, to 2024. Everything is shown in dollars: the Swedish pot is kept in kronor internally (the starting amount is exchanged at today's rate, about 9.9 SEK per USD) and converted back at the same constant rate for display, so exchange-rate fluctuations over time do not affect the comparison — the chart isolates market returns and inflation, not currency movements. The monthly-investing slider saves that percentage of each year's average salary — US average annual wages for the S&P 500, Swedish average wages for the OMXS30 — added to the pot during the year before that year's return. The S&P 500 series is the total return (dividends reinvested). The OMXS30 series is the published price index, plus an estimated dividend yield you can set (Swedish large caps historically paid about 3-4% a year, which approximates the total-return index OMXS30GI). Inflation correction divides each year's value by that year's actual CPI in the same country — US CPI for the S&P 500, Swedish CPI for the OMXS30 — so the real series is shown in the starting year's purchasing power (the standard way to display real growth; both curves start at your starting amount). Yearly returns are reported as money-weighted returns (IRR), which stay honest when salary contributions flow in. Leverage adds borrowed money on top of the investment; each year the leveraged portfolio earns (1 + L) × market return minus L × that country's historical short-term interest rate (US 3-month Treasury bill / fed funds, Riksbank repo / STIBOR), and the borrowed share is reset annually.",
+    assumptions: ["The whole amount is invested and never withdrawn; no money is taken out", "The krona/dollar exchange rate is held constant at today's approximate rate (~9.9 SEK per USD, Nov 2026) for the whole period; real exchange-rate swings (e.g. the 1992 krona collapse, or SEK weakness in 2022-2023) are deliberately ignored to keep the comparison about markets, not currencies", "Real (inflation-corrected) values are shown in the starting year's purchasing power; salary contributions are deflated by the same country's CPI", "Salary contributions are the slider percentage of each year's average salary, added at the start of the year (in reality they are spread over the months) and then earn that year's return", "The average-salary series are approximate (SSA national average wage for the US; SCB average monthly wage × 12 for Sweden)", "The OMXS30 dividend yield is a constant estimate, not a year-by-year series", "Interest on the borrowed money is charged yearly and the leverage share is reset to the slider value every year (a leveraged ETF style, annually rebalanced)", "No fees, no taxes, no spreads, and no currency hedging", "The interest-rate series are approximate annual averages"],
+    references: [
+      "OMX Stockholm 30 — annual returns table (Wikipedia, from Yahoo Finance historical data): https://en.wikipedia.org/wiki/OMX_Stockholm_30",
+      "S&P 500 annual total returns (dividends reinvested), e.g. Slickcharts S&P 500 returns by year: https://www.slickcharts.com/sp500/returns",
+      "US average annual wages, Social Security Administration National Average Wage Index: https://www.ssa.gov/oact/cola/awiseries.html",
+      "Swedish average monthly salaries, Statistics Sweden (SCB) salary statistics: https://www.scb.se/en/finding-statistics/statistics-by-subject-area/labour-market/earnings/",
+      "US CPI annual averages, US Bureau of Labor Statistics: https://www.bls.gov/cpi/",
+      "Swedish CPI annual averages, Statistics Sweden (SCB): https://www.scb.se/en/finding-statistics/statistics-by-subject-area/prices-and-consumption/consumer-price-index/",
+      "US short-term interest rates (3-month Treasury bill / effective fed funds), FRED, Federal Reserve Bank of St. Louis: https://fred.stlouisfed.org/",
+      "Swedish repo rate history, Sveriges Riksbank: https://www.riksbank.se/en-gb/interest-rates-and-exchange-rate/repo-rate-history/",
+      "USD/SEK exchange rate, Federal Reserve H.10 release (Swedish kronor per dollar): https://www.federalreserve.gov/releases/h10/hist/dat00_sd.htm",
+    ],
+  },
+};
+// ===== EDIT ABOVE ===========================================================================
+</script>
+
+<script>
+// ===== DO NOT EDIT BELOW THIS LINE ==========================================================
+function makeRng(seed) { let a = (seed >>> 0) || 1; return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function randNormal(rng) { let u = 0, v = 0; while (u === 0) u = rng(); while (v === 0) v = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function normCdf(z) { if (z === 0) return 0.5; const t = 1 / (1 + 0.2316419 * Math.abs(z)); const d = 0.3989422804014327 * Math.exp(-z * z / 2); const p = d * t * (0.31938153 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429)))); return z > 0 ? 1 - p : p; }
+function round(x, d = 0) { const f = Math.pow(10, d); return Math.round(x * f) / f; }
+function range(a, b, step = 1) { const out = []; for (let v = a; v <= b + 1e-9; v += step) out.push(round(v, 10)); return out; }
+
+const COLORS = ["#b45309", "#1d4ed8", "#15803d", "#7c3aed", "#be123c", "#0e7490"];
+const state = {};
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function fmtFull(v) { return typeof v === "number" ? v.toLocaleString("en", { maximumFractionDigits: 3 }) : String(v); }
+function fmt(v) { if (typeof v !== "number") return String(v); const a = Math.abs(v); if (a >= 1e6) return round(v / 1e6, 1) + "M"; if (a >= 1e4) return round(v / 1e3, 0) + "k"; if (a >= 100) return round(v, 0).toString(); if (a >= 1) return round(v, 1).toString(); return round(v, 3).toString(); }
+
+function niceTicks(lo, hi, n = 5) {
+  if (hi === lo) { hi = lo + 1; }
+  const span = hi - lo, step0 = span / n, mag = Math.pow(10, Math.floor(Math.log10(step0)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= step0) || 10 * mag;
+  const ticks = []; for (let v = Math.floor(lo / step) * step; v <= hi + step * 1e-9; v += step) ticks.push(round(v, 10));
+  return ticks;
+}
+
+function drawChart(chart) {
+  const W = 760, H = 360, L = 64, R = 16, T = 16, B = 52;
+  const iw = W - L - R, ih = H - T - B;
+  const all = chart.series.flatMap(s => s.values).filter(v => Number.isFinite(v));
+  let lo = Math.min(0, ...all), hi = Math.max(...all);
+  if (chart.yMin !== undefined) lo = chart.yMin; if (chart.yMax !== undefined) hi = chart.yMax;
+  const ticks = niceTicks(lo, hi); lo = Math.min(lo, ticks[0]); hi = Math.max(hi, ticks[ticks.length - 1]);
+  const y = v => T + ih - (v - lo) / (hi - lo || 1) * ih;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${esc(chart.title || "chart")}">`;
+  ticks.forEach(t => { s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="#e7e5e4"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`; });
+  const n = chart.x.length;
+  const labelEvery = Math.max(1, Math.ceil(n / 12));
+  if (chart.type === "bar") {
+    const k = chart.series.length, gw = iw / n, bw = Math.max(2, (gw * 0.8) / k);
+    chart.x.forEach((xl, i) => {
+      chart.series.forEach((ser, j) => {
+        const v = ser.values[i]; if (!Number.isFinite(v)) return;
+        const x0 = L + i * gw + gw * 0.1 + j * bw, y0 = y(Math.max(v, 0)), y1 = y(Math.min(v, 0));
+        s += `<rect x="${x0}" y="${y0}" width="${bw - 1}" height="${Math.max(0.5, y1 - y0)}" fill="${COLORS[j % 6]}" rx="2"><title>${esc(ser.name)} · ${esc(xl)}: ${fmtFull(v)}</title></rect>`;
+      });
+      if (i % labelEvery === 0) s += `<text x="${L + i * gw + gw / 2}" y="${H - B + 18}" text-anchor="middle">${esc(xl)}</text>`;
+    });
+  } else {
+    const xs = chart.x.map(Number), numeric = xs.every(Number.isFinite);
+    const xmin = numeric ? Math.min(...xs) : 0, xmax = numeric ? Math.max(...xs) : n - 1;
+    const xp = i => L + ((numeric ? xs[i] : i) - xmin) / ((xmax - xmin) || 1) * iw;
+    chart.series.forEach((ser, j) => {
+      const pts = ser.values.map((v, i) => Number.isFinite(v) ? `${xp(i)},${y(v)}` : null).filter(Boolean).join(" ");
+      s += `<polyline points="${pts}" fill="none" stroke="${COLORS[j % 6]}" stroke-width="2.5" stroke-linejoin="round"/>`;
+      if (n <= 120) ser.values.forEach((v, i) => { if (Number.isFinite(v)) s += `<circle cx="${xp(i)}" cy="${y(v)}" r="5" fill="${COLORS[j % 6]}" fill-opacity="0.01"><title>${esc(ser.name)} · ${esc(String(chart.x[i]))}: ${fmtFull(v)}</title></circle>`; });
+    });
+    chart.x.forEach((xl, i) => { if (i % labelEvery === 0 || i === n - 1) s += `<text x="${xp(i)}" y="${H - B + 18}" text-anchor="middle">${esc(numeric ? fmt(xs[i]) : xl)}</text>`; });
+  }
+  s += `<line x1="${L}" x2="${W - R}" y1="${y(lo)}" y2="${y(lo)}" stroke="#a8a29e"/>`;
+  s += `<text x="${L + iw / 2}" y="${H - 8}" text-anchor="middle">${esc(chart.xLabel || "")}</text>`;
+  s += `<text transform="translate(14 ${T + ih / 2}) rotate(-90)" text-anchor="middle">${esc(chart.yLabel || "")}</text></svg>`;
+  $("chart").innerHTML = s;
+  $("chartTitle").textContent = chart.title || "Chart";
+  $("legend").innerHTML = chart.series.length > 1 || chart.type === "bar" ? chart.series.map((ser, j) => `<span style="--c:${COLORS[j % 6]}">${esc(ser.name)}</span>`).join("") : "";
+}
+
+function render() {
+  try {
+    const r = SIM.calculate({ ...state });
+    $("cards").innerHTML = (r.cards || []).map(c => `<div class="card"><div class="l">${esc(c.label)}</div><div class="v">${esc(c.value)}</div>${c.note ? `<div class="n">${esc(c.note)}</div>` : ""}</div>`).join("");
+    if (r.chart) drawChart(r.chart);
+    $("takeaway").textContent = SIM.takeaway ? SIM.takeaway({ ...state }, r) : "";
+  } catch (e) {
+    $("chart").innerHTML = ""; $("legend").innerHTML = ""; $("takeaway").textContent = "";
+    $("cards").innerHTML = `<div class="error">Something in calculate() or takeaway() went wrong:\n${esc(e.message)}\n\nCopy this message into OpenCode and ask it to fix the problem.</div>`;
+  }
+  document.querySelectorAll(".input").forEach(el => { el.querySelector(".val").textContent = state[el.dataset.id] + (el.dataset.unit || ""); });
+  try { history.replaceState(null, "", "#" + new URLSearchParams(state).toString()); } catch (e) { /* some browsers limit how often this may be called */ }
+}
+
+function setup() {
+  const m = SIM.meta; document.title = m.title;
+  $("title").textContent = m.title; $("question").textContent = m.question;
+  $("platform").textContent = "Simulation for " + (m.platform || "") ;
+  $("footer").textContent = "Built by " + (m.author || "a student") + " in the Meta-science course, University of Innsbruck. A teaching simulation, not financial advice.";
+  const fromUrl = new URLSearchParams(location.hash.slice(1));
+  SIM.inputs.forEach(inp => { const u = Number(fromUrl.get(inp.id)); const onGrid = Math.abs((u - inp.min) / inp.step - Math.round((u - inp.min) / inp.step)) < 1e-6; state[inp.id] = fromUrl.has(inp.id) && Number.isFinite(u) && u >= inp.min && u <= inp.max && onGrid ? u : inp.value; });
+  $("inputs").innerHTML = SIM.inputs.map(inp => `<div class="input" data-id="${esc(inp.id)}" data-unit="${esc(inp.unit || "")}"><label>${esc(inp.label)} <span class="val"></span></label><input type="range" min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${state[inp.id]}" aria-label="${esc(inp.label)}">${inp.help ? `<div class="help">${esc(inp.help)}</div>` : ""}</div>`).join("");
+  document.querySelectorAll(".input input").forEach(el => el.addEventListener("input", () => { state[el.parentElement.dataset.id] = Number(el.value); document.querySelectorAll(".presets button").forEach(b => b.classList.remove("on")); $("presetNote").textContent = ""; render(); }));
+  $("presets").innerHTML = (SIM.presets || []).map((p, i) => `<button data-i="${i}">${esc(p.name)}</button>`).join("");
+  document.querySelectorAll(".presets button").forEach(b => b.addEventListener("click", () => {
+    const p = SIM.presets[b.dataset.i]; Object.assign(state, p.values);
+    document.querySelectorAll(".input").forEach(el => { el.querySelector("input").value = state[el.dataset.id]; });
+    document.querySelectorAll(".presets button").forEach(x => x.classList.toggle("on", x === b)); $("presetNote").textContent = p.note || ""; render();
+  }));
+  $("reset").addEventListener("click", () => {
+    SIM.inputs.forEach(inp => { state[inp.id] = inp.value; });
+    document.querySelectorAll(".input").forEach(el => { el.querySelector("input").value = state[el.dataset.id]; });
+    document.querySelectorAll(".presets button").forEach(x => x.classList.remove("on")); $("presetNote").textContent = ""; render();
+  });
+  const md = SIM.methodology || {};
+  $("method").innerHTML = `<p>${esc(md.how || "")}</p>` + (md.assumptions?.length ? `<p><b>Assumptions</b></p><ul>${md.assumptions.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : "") + (md.references?.length ? `<p><b>References</b></p><ul>${md.references.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : "");
+  render();
+}
+if (typeof document !== "undefined" && document.getElementById("title")) setup();
+</script>
+</body>
+</html>
