@@ -1,0 +1,5 @@
+.vercel
+.env*
+
+# course kit rule: local backups stay local
+backups/

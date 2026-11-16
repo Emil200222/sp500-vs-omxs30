@@ -99,32 +99,36 @@ window.addEventListener("error", function (e) {
 
 <script>
 // ===== EDIT BELOW ===========================================================================
-// Historical data, one value per year, 1987..2024 (38 values, aligned with the YEARS array).
-const YEARS = Array.from({ length: 2024 - 1987 + 1 }, (_, i) => 1987 + i);
+// Historical data, one value per year, 1930..2024 (95 values, aligned with the YEARS array).
+// 1930-1986: US returns and T-bill rates from Damodaran (NYU Stern, histretSP); Swedish price returns,
+// CPI and short-term bill yields from Frennberg & Hansson's index as updated in Waldenström (2014),
+// Riksbank 'Historical Monetary and Financial Statistics for Sweden', vol 2, ch 6, Tables A6.2 and A6.3.
+// Average wages could not be sourced for 1930-1986, so salary saving counts as 0 before 1987 (disclosed in the help and assumptions).
+const YEARS = Array.from({ length: 2024 - 1930 + 1 }, (_, i) => 1930 + i);
 
-// S&P 500 total return in %, dividends reinvested (standard published annual figures).
-const SPX_TR = [5.25, 16.61, 31.69, -3.17, 30.47, 7.62, 10.08, 0.97, 37.58, 22.96, 33.36, 28.58, 21.04, -9.11, -11.88, -22.10, 28.70, 10.87, 4.91, 15.80, 5.49, -37.00, 26.46, 15.06, 2.11, 16.00, 32.39, 13.69, 1.38, 11.96, 21.83, -4.38, 31.49, 18.40, 28.71, -18.11, 26.29, 25.02];
+// S&P 500 total return in %, dividends reinvested. 1930-1986: Damodaran (NYU Stern); 1987-2024: standard published annual figures (e.g. Slickcharts). Damodaran's 1987 figure is 5.81% vs 5.25% here - small seam disclosed in the methodology.
+const SPX_TR = [-25.12, -43.84, -8.64, 49.98, -1.19, 46.74, 31.94, -35.34, 29.28, -1.1, -10.67, -12.77, 19.17, 25.06, 19.03, 35.82, -8.43, 5.2, 5.7, 18.3, 30.81, 23.68, 18.15, -1.21, 52.56, 32.6, 7.44, -10.46, 43.72, 12.06, 0.34, 26.64, -8.81, 22.61, 16.42, 12.4, -9.97, 23.8, 10.81, -8.24, 3.56, 14.22, 18.76, -14.31, -25.9, 37, 23.83, -6.98, 6.51, 18.52, 31.74, -4.7, 20.42, 22.34, 6.15, 31.24, 18.49, 5.25, 16.61, 31.69, -3.17, 30.47, 7.62, 10.08, 0.97, 37.58, 22.96, 33.36, 28.58, 21.04, -9.11, -11.88, -22.10, 28.70, 10.87, 4.91, 15.80, 5.49, -37.00, 26.46, 15.06, 2.11, 16.00, 32.39, 13.69, 1.38, 11.96, 21.83, -4.38, 31.49, 18.40, 28.71, -18.11, 26.29, 25.02];
 
-// OMXS30 price return in % (Wikipedia, from Yahoo Finance data; the index starts Sep 1986).
-const OMXS30 = [-16.67, 51.81, 30.60, -27.89, 11.02, 7.64, 53.08, 3.42, 18.83, 38.86, 27.79, 16.94, 70.96, -11.92, -19.85, -41.74, 29.01, 16.59, 29.40, 19.51, -5.74, -38.75, 43.69, 21.42, -14.51, 11.83, 20.66, 9.87, -1.21, 4.86, 3.94, -10.67, 25.78, 5.81, 29.07, -15.55, 17.26, 3.63];
+// Swedish stock price return in %. 1930-1986: Frennberg & Hansson broad Stockholm price index (Riksbank vol 2, Table A6.2); 1987-2024: OMXS30 price return (Wikipedia, from Yahoo Finance data; the index starts Sep 1986). The dividend-yield slider adds dividends to the whole series.
+const OMXS30 = [-11.71, -37.35, -27.07, 11.68, 24.13, 5.4, 33.4, -4.61, 4.03, -23.68, 5.27, 16.76, 9.74, 6.62, 10.44, 5.75, 9.78, -6.93, -8.87, 8.95, 23.21, 18.07, -14.57, 13.22, 32.49, -6.39, -1.64, 4.02, 17.2, 43.06, 0.44, -0.63, -8.33, 23.86, 16.25, 7.12, -22.71, 3.94, 34.09, 2.3, -22.65, 21.75, 10.29, -0.39, -2.32, 29.35, 1.15, -15.68, 16.26, -1.26, 22.24, 57.42, 35.13, 66.12, -11.21, 25.66, 50.57, -16.67, 51.81, 30.60, -27.89, 11.02, 7.64, 53.08, 3.42, 18.83, 38.86, 27.79, 16.94, 70.96, -11.92, -19.85, -41.74, 29.01, 16.59, 29.40, 19.51, -5.74, -38.75, 43.69, 21.42, -14.51, 11.83, 20.66, 9.87, -1.21, 4.86, 3.94, -10.67, 25.78, 5.81, 29.07, -15.55, 17.26, 3.63];
 
-// US inflation in % (CPI, annual average, US Bureau of Labor Statistics).
-const CPI_US = [3.65, 4.14, 4.82, 5.40, 4.21, 3.01, 2.99, 2.56, 2.83, 2.95, 2.29, 1.56, 2.21, 3.38, 2.83, 1.60, 2.27, 2.68, 3.39, 3.23, 2.85, 3.85, -0.36, 1.64, 3.16, 2.07, 1.46, 1.62, 0.12, 1.26, 2.13, 2.44, 1.81, 1.23, 4.70, 8.00, 4.12, 2.95];
+// US inflation in %. 1930-1986: change in the CPI annual averages of the Minneapolis Fed table; 1987-2024: CPI annual average change (US Bureau of Labor Statistics).
+const CPI_US = [-2.91, -8.98, -10.53, -5.15, 3.88, 2.24, 1.46, 3.6, -2.08, -1.42, 0.72, 5, 10.88, 6.13, 1.73, 2.27, 8.33, 14.36, 7.62, -0.83, 1.26, 7.88, 2.31, 0.75, 0.37, -0.37, 1.49, 3.31, 2.85, 1.04, 1.37, 1.01, 1.34, 0.99, 1.31, 1.61, 3.17, 2.77, 4.19, 5.46, 5.72, 4.38, 3.21, 6.22, 11.04, 9.13, 5.76, 6.5, 7.59, 11.35, 13.5, 10.32, 6.16, 3.21, 4.32, 3.56, 1.86, 3.65, 4.14, 4.82, 5.40, 4.21, 3.01, 2.99, 2.56, 2.83, 2.95, 2.29, 1.56, 2.21, 3.38, 2.83, 1.60, 2.27, 2.68, 3.39, 3.23, 2.85, 3.85, -0.36, 1.64, 3.16, 2.07, 1.46, 1.62, 0.12, 1.26, 2.13, 2.44, 1.81, 1.23, 4.70, 8.00, 4.12, 2.95];
 
-// Swedish inflation in % (CPI, annual average, Statistics Sweden / SCB).
-const CPI_SE = [4.2, 6.6, 6.6, 9.0, 9.3, 2.3, 4.6, 2.2, 2.5, 0.5, 0.9, -0.1, 0.6, 1.2, 2.7, 1.9, 1.9, 0.4, 0.5, 1.4, 2.2, 3.3, -0.3, 1.9, 3.0, 0.9, 0.1, -0.1, 0.7, 1.0, 1.9, 2.0, 1.7, 0.5, 2.9, 8.4, 5.7, 1.7];
+// Swedish inflation in %. 1930-1986: change in the Frennberg & Hansson CPI index (Riksbank vol 2, Table A6.2); 1987-2024: CPI annual average (Statistics Sweden / SCB).
+const CPI_SE = [-3.57, -2.43, 0.39, -2.09, 1.33, 1.18, 0.58, 4.26, 0.06, 7.18, 15.82, 12.81, 7.78, -0.53, -0.33, -0.62, 4, 0.84, 6.55, -1.3, 5.7, 17.32, 3.2, 0, 1.12, 6.01, 3.6, 3.85, 3.2, 1.31, 3.82, 2.29, 5.09, 3.07, 3.89, 5.98, 5.14, 3.42, 2.04, 3.81, 8.13, 7.12, 5.76, 7.58, 11.41, 9.04, 9.67, 12.6, 7.38, 9.79, 14.04, 9.15, 9.6, 9.18, 8.28, 5.53, 3.34, 4.2, 6.6, 6.6, 9.0, 9.3, 2.3, 4.6, 2.2, 2.5, 0.5, 0.9, -0.1, 0.6, 1.2, 2.7, 1.9, 1.9, 0.4, 0.5, 1.4, 2.2, 3.3, -0.3, 1.9, 3.0, 0.9, 0.1, -0.1, 0.7, 1.0, 1.9, 2.0, 1.7, 0.5, 2.9, 8.4, 5.7, 1.7];
 
-// Cost of capital: US short-term interest rate in % (3-month Treasury bill / fed funds, annual average, approximate).
-const RATE_US = [5.8, 7.0, 8.1, 7.5, 5.4, 3.5, 3.0, 4.3, 5.5, 5.0, 5.1, 4.8, 4.7, 5.8, 3.5, 1.6, 1.0, 1.3, 3.2, 4.8, 4.4, 1.4, 0.1, 0.2, 0.1, 0.1, 0.1, 0.0, 0.0, 0.3, 1.0, 2.0, 2.1, 0.4, 0.0, 2.0, 5.1, 5.0];
+// Cost of capital: US short-term interest rate in %. 1930-1986: 3-month Treasury bill annual average (Damodaran, NYU Stern); 1987-2024: 3-month T-bill / fed funds, annual average (approximate).
+const RATE_US = [4.55, 2.31, 1.07, 0.96, 0.28, 0.17, 0.17, 0.28, 0.07, 0.05, 0.04, 0.13, 0.34, 0.38, 0.38, 0.38, 0.38, 0.6, 1.05, 1.12, 1.2, 1.52, 1.72, 1.89, 0.94, 1.72, 2.62, 3.22, 1.77, 3.39, 2.87, 2.35, 2.77, 3.16, 3.55, 3.95, 4.86, 4.29, 5.34, 6.67, 6.39, 4.33, 4.06, 7.04, 7.85, 5.79, 4.98, 5.26, 7.18, 10.05, 11.39, 14.04, 11.09, 8.95, 9.92, 7.72, 6.15, 5.8, 7.0, 8.1, 7.5, 5.4, 3.5, 3.0, 4.3, 5.5, 5.0, 5.1, 4.8, 4.7, 5.8, 3.5, 1.6, 1.0, 1.3, 3.2, 4.8, 4.4, 1.4, 0.1, 0.2, 0.1, 0.1, 0.1, 0.0, 0.0, 0.3, 1.0, 2.0, 2.1, 0.4, 0.0, 2.0, 5.1, 5.0];
 
-// Cost of capital: Swedish short-term interest rate in % (Riksbank repo rate / STIBOR, annual average, approximate; negative 2015-2019).
-const RATE_SE = [8.4, 8.9, 9.5, 10.5, 10.0, 12.9, 8.4, 6.5, 8.5, 5.2, 4.1, 4.0, 3.2, 3.6, 3.6, 4.1, 3.4, 2.1, 1.7, 2.5, 3.8, 4.3, 0.4, 0.6, 2.3, 1.4, 1.0, 0.2, -0.2, -0.5, -0.5, -0.5, -0.2, 0.0, 0.0, 1.6, 3.9, 3.4];
+// Cost of capital: Swedish short-term interest rate in %. 1930-1986: short-term government bill yield (Riksbank vol 2, Table A6.3); 1987-2024: Riksbank repo rate / STIBOR, annual average (approximate; negative 2015-2019).
+const RATE_SE = [3.5, 6, 3.5, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 3, 3.5, 3, 3, 3, 3, 2.5, 2.5, 2.5, 2.5, 2.5, 3, 3, 3, 2.75, 2.75, 3.75, 4, 5, 4.5, 4.5, 5, 5, 4, 4, 5, 5.5, 6, 6, 5, 7, 7, 5, 5, 5, 7, 6, 8, 8, 6.5, 9, 10, 11, 10, 11.8, 11.5, 12.65, 9.3, 8.4, 8.9, 9.5, 10.5, 10.0, 12.9, 8.4, 6.5, 8.5, 5.2, 4.1, 4.0, 3.2, 3.6, 3.6, 4.1, 3.4, 2.1, 1.7, 2.5, 3.8, 4.3, 0.4, 0.6, 2.3, 1.4, 1.0, 0.2, -0.2, -0.5, -0.5, -0.5, -0.2, 0.0, 0.0, 1.6, 3.9, 3.4];
 
-// Average salaries per year: US average annual wage in $ (Social Security Administration, National Average Wage Index, approximate for recent years).
-const SALARY_US = [18426, 19334, 20099, 21449, 21911, 22959, 23132, 23753, 24705, 25913, 27220, 28861, 30469, 32154, 32921, 33252, 34064, 35648, 36952, 38651, 40405, 40947, 40711, 41673, 42979, 44321, 45027, 46481, 48098, 49630, 50321, 52145, 54099, 55828, 60575, 63795, 67586, 69900];
+// Average salaries per year: US average annual wage in $ (Social Security Administration, National Average Wage Index). 0 for 1930-1986: no citable wage series could be fetched (SSA starts 1951 and blocks automated downloads).
+const SALARY_US = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18426, 19334, 20099, 21449, 21911, 22959, 23132, 23753, 24705, 25913, 27220, 28861, 30469, 32154, 32921, 33252, 34064, 35648, 36952, 38651, 40405, 40947, 40711, 41673, 42979, 44321, 45027, 46481, 48098, 49630, 50321, 52145, 54099, 55828, 60575, 63795, 67586, 69900];
 
-// Average salaries per year: Swedish average monthly wage (SCB, approximate) × 12, in SEK.
-const SALARY_SE = [99600, 108000, 117600, 129600, 144000, 159600, 168000, 177600, 186000, 193200, 202800, 213600, 225600, 238800, 253200, 267600, 279600, 290400, 301200, 315600, 331200, 345600, 356400, 368400, 381600, 397200, 410400, 422400, 438000, 454800, 471600, 490800, 511200, 525600, 544800, 577200, 614400, 636000];
+// Average salaries per year: Swedish average monthly wage (SCB, approximate) × 12, in SEK. 0 for 1930-1986: no citable series in the sources used here.
+const SALARY_SE = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 99600, 108000, 117600, 129600, 144000, 159600, 168000, 177600, 186000, 193200, 202800, 213600, 225600, 238800, 253200, 267600, 279600, 290400, 301200, 315600, 331200, 345600, 356400, 368400, 381600, 397200, 410400, 422400, 438000, 454800, 471600, 490800, 511200, 525600, 544800, 577200, 614400, 636000];
 
 const fmtMoney = (v, cur) => (cur < 0 ? "-" : "") + (cur === "$" ? "$" : cur) + round(Math.abs(v), 0).toLocaleString("en");
 const compact = v => Math.abs(v) >= 1e6 ? round(v / 1e6, 1) + "M" : Math.abs(v) >= 1e3 ? round(v / 1e3, 0) + "k" : round(v, 0).toString();
@@ -141,14 +145,14 @@ const SIM = {
   },
   inputs: [
     { id: "start",     label: "Starting amount",        min: 100, max: 100000, step: 100, value: 1000, unit: "",  help: "Same money in both markets: dollars in the S&P 500, and the same amount converted to kronor (at today's rate, ~9.9 kr per $) for the OMXS30" },
-    { id: "startYear", label: "Starting year",          min: 1987, max: 2024,  step: 1,   value: 1987, unit: "",  help: "The year you invest; the simulation runs to 2024 using real historical returns" },
-    { id: "monthlyPct", label: "Monthly investing",     min: 0,    max: 50,    step: 1,   value: 10,   unit: "%", help: "Of the average salary each year: the US investor saves this share of US average wages into the S&P 500, the Swedish investor the same share of Swedish average wages into the OMXS30" },
+    { id: "startYear", label: "Starting year",          min: 1930, max: 2024,  step: 1,   value: 1930, unit: "",  help: "The year you invest; the simulation runs to 2024 using real historical returns. 1930-1986 the series come from academic historical indices (see the card), 1987-2024 from the modern index data" },
+    { id: "monthlyPct", label: "Monthly investing",     min: 0,    max: 50,    step: 1,   value: 10,   unit: "%", help: "Of the average salary each year: the US investor saves this share of US average wages into the S&P 500, the Swedish investor the same share of Swedish average wages into the OMXS30. Average wages could not be sourced before 1987, so no salary money is added in 1930-1986 (see assumptions)" },
     { id: "real",      label: "Inflation-corrected",    min: 0,    max: 1,     step: 1,   value: 1,    unit: "",  help: "1 = values shown in today's money, using US CPI for the S&P 500 and Swedish CPI (SCB) for the OMXS30. 0 = nominal values" },
     { id: "divSE",     label: "OMXS30 dividend yield",  min: 0,    max: 5,     step: 0.25, value: 3.5, unit: "%", help: "Added to the OMXS30 price returns to approximate the total-return index (OMXS30GI); Swedish large caps paid ~3-4% a year. Set 0 to compare pure price indexes" },
     { id: "leverage",  label: "Leverage",               min: 0,    max: 200,   step: 10,  value: 0,    unit: "%", help: "Borrowed money added ON TOP of your investment, rebalanced every year. It costs interest at each country's own historical rate (see the card)" },
   ],
   presets: [
-    { name: "Full history",        values: { startYear: 1987, leverage: 0, real: 1 }, note: "Invest in 1987, ride the whole 1987-2024 ride" },
+    { name: "Full history",        values: { startYear: 1930, leverage: 0, real: 1 }, note: "Invest in 1930: the Great Depression, the 1970s inflation, the 1987 crash and all" },
     { name: "From the dot-com peak", values: { startYear: 2000 },                        note: "Starting in 2000 catches the dot-com crash and 2008" },
     { name: "2× leverage",         values: { leverage: 100 },                            note: "Borrowed as much again — watch the interest bill and the swings" },
     { name: "Nominal, no dividends", values: { real: 0, divSE: 0 },                       note: "Pure price indexes, before inflation" },
@@ -164,6 +168,7 @@ const SIM = {
     const x = [], spNom = [], seNom = [], spReal = [], seReal = [];
     const flowsUS = [], flowsSE = [];
     let sp = p.start, se = p.start * FX_TODAY, cumUS = 1, cumSE = 1;
+    let ruinedUS = false, ruinedSE = false;
     let sumUS = 0, sumSE = 0, n = 0, totUS = 0, totSE = 0;
     for (let i = idx0; i < YEARS.length; i++) {
       const y = YEARS[i];
@@ -180,6 +185,9 @@ const SIM = {
       // Leverage: exposure grows with the market, the debt accrues interest; the borrowed share is reset every year
       sp *= (1 + L) * (1 + rSP) - L * (1 + iUS);
       se *= (1 + L) * (1 + rSE) - L * (1 + iSE);
+      // Margin call: a leveraged pot that goes below zero is wiped out - it stays at zero (money is gone)
+      if (sp < 0) { sp = 0; ruinedUS = true; }
+      if (se < 0) { se = 0; ruinedSE = true; }
       cumUS *= 1 + CPI_US[i] / 100;
       cumSE *= 1 + CPI_SE[i] / 100;
       flowsUS[flowsUS.length - 1].cum = cumUS;
@@ -193,7 +201,7 @@ const SIM = {
     const years = x.length - 1;
     // Money-weighted yearly return (IRR): with salary contributions flowing in, a simple end/start CAGR would be inflated
     const irr = (finalVal, flows, isReal, scale) => {
-      if (!(finalVal > 0)) return NaN;
+      if (!(finalVal > 0) || years < 1) return NaN;
       const gap = r => {
         let v = p.start * Math.pow(1 + r, years);
         for (const fl of flows) {
@@ -217,11 +225,11 @@ const SIM = {
       { label: "S&P 500 end value", value: fmtMoney(spEndN, "$"), note: "nominal, " + y0 + "–2024" },
       { label: "OMXS30 end value", value: fmtMoney(seEndN, "$"), note: "kr " + compact(seEndN * FX_TODAY) + " converted at today's rate" },
       real
-        ? { label: "S&P 500 real return", value: pct(irrUSr), note: "a year after US inflation · end pot = " + multUS + "× the money put in" }
-        : { label: "S&P 500 nominal return", value: pct(irrUS), note: "a year · end pot = " + multUS + "× the money put in" },
+        ? { label: "S&P 500 real return", value: pct(irrUSr), note: "a year after US inflation · end pot = " + multUS + "× the money put in" + (ruinedUS ? " · WIPED OUT: a leveraged year took the pot below zero - treated as a total loss" : "") }
+        : { label: "S&P 500 nominal return", value: pct(irrUS), note: "a year · end pot = " + multUS + "× the money put in" + (ruinedUS ? " · WIPED OUT: a leveraged year took the pot below zero - treated as a total loss" : "") },
       real
-        ? { label: "OMXS30 real return", value: pct(irrSEr), note: "a year after Swedish inflation · end pot = " + multSE + "× the money put in" }
-        : { label: "OMXS30 nominal return", value: pct(irrSE), note: "a year · end pot = " + multSE + "× the money put in" },
+        ? { label: "OMXS30 real return", value: pct(irrSEr), note: "a year after Swedish inflation · end pot = " + multSE + "× the money put in" + (ruinedSE ? " · WIPED OUT: a leveraged year took the pot below zero - treated as a total loss" : "") }
+        : { label: "OMXS30 nominal return", value: pct(irrSE), note: "a year · end pot = " + multSE + "× the money put in" + (ruinedSE ? " · WIPED OUT: a leveraged year took the pot below zero - treated as a total loss" : "") },
       { label: "Cost of borrowed money", value: "US " + round(sumUS / n, 1) + "% · SE " + round(sumSE / n, 1) + "%", note: "average yearly interest rate " + y0 + "–2024, charged on " + p.leverage + "% leverage" },
       { label: "Added from salary", value: "$" + compact(totUS) + " · $" + compact(totSE / FX_TODAY), note: p.monthlyPct + "% of average salaries (US · Sweden, converted at today's rate)" },
     ];
@@ -252,12 +260,15 @@ const SIM = {
     }
     if (p.leverage > 0) {
       s += " With " + p.leverage + "% leverage both markets got bigger swings, and the borrowed money cost the historical US or Swedish interest rate every year — cheap borrowing years helped, but crash years (2000–2002, 2008, 2022) hit a leveraged portfolio much harder.";
+      if (r.cards[2].note.includes("WIPED OUT") || r.cards[3].note.includes("WIPED OUT")) {
+        s += " At some point the pot went below zero — in reality that is a margin call: the borrowed money is lost and the pot is treated as gone.";
+      }
     }
     return s;
   },
   methodology: {
-    how: "The starting amount is invested in the chosen starting year and then follows the real annual returns, year by year, to 2024. Everything is shown in dollars: the Swedish pot is kept in kronor internally (the starting amount is exchanged at today's rate, about 9.9 SEK per USD) and converted back at the same constant rate for display, so exchange-rate fluctuations over time do not affect the comparison — the chart isolates market returns and inflation, not currency movements. The monthly-investing slider saves that percentage of each year's average salary — US average annual wages for the S&P 500, Swedish average wages for the OMXS30 — added to the pot during the year before that year's return. The S&P 500 series is the total return (dividends reinvested). The OMXS30 series is the published price index, plus an estimated dividend yield you can set (Swedish large caps historically paid about 3-4% a year, which approximates the total-return index OMXS30GI). Inflation correction divides each year's value by that year's actual CPI in the same country — US CPI for the S&P 500, Swedish CPI for the OMXS30 — so the real series is shown in the starting year's purchasing power (the standard way to display real growth; both curves start at your starting amount). Yearly returns are reported as money-weighted returns (IRR), which stay honest when salary contributions flow in. Leverage adds borrowed money on top of the investment; each year the leveraged portfolio earns (1 + L) × market return minus L × that country's historical short-term interest rate (US 3-month Treasury bill / fed funds, Riksbank repo / STIBOR), and the borrowed share is reset annually.",
-    assumptions: ["The whole amount is invested and never withdrawn; no money is taken out", "The krona/dollar exchange rate is held constant at today's approximate rate (~9.9 SEK per USD, Nov 2026) for the whole period; real exchange-rate swings (e.g. the 1992 krona collapse, or SEK weakness in 2022-2023) are deliberately ignored to keep the comparison about markets, not currencies", "Real (inflation-corrected) values are shown in the starting year's purchasing power; salary contributions are deflated by the same country's CPI", "Salary contributions are the slider percentage of each year's average salary, added at the start of the year (in reality they are spread over the months) and then earn that year's return", "The average-salary series are approximate (SSA national average wage for the US; SCB average monthly wage × 12 for Sweden)", "The OMXS30 dividend yield is a constant estimate, not a year-by-year series", "Interest on the borrowed money is charged yearly and the leverage share is reset to the slider value every year (a leveraged ETF style, annually rebalanced)", "No fees, no taxes, no spreads, and no currency hedging", "The interest-rate series are approximate annual averages"],
+    how: "The starting amount is invested in the chosen starting year and then follows the real annual returns, year by year, to 2024. Everything is shown in dollars: the Swedish pot is kept in kronor internally (the starting amount is exchanged at today's rate, about 9.9 SEK per USD) and converted back at the same constant rate for display, so exchange-rate fluctuations over time do not affect the comparison — the chart isolates market returns and inflation, not currency movements. The monthly-investing slider saves that percentage of each year's average salary — US average annual wages for the S&P 500, Swedish average wages for the OMXS30 — added to the pot during the year before that year's return. For 1987-2024 the S&P 500 series is the total return (dividends reinvested) and the Swedish series is the published OMXS30 price index plus an estimated dividend yield you can set (Swedish large caps historically paid about 3-4% a year, approximating the total-return index OMXS30GI). For 1930-1986 the series come from academic historical indices: the US side uses the S&P 500 total return and 3-month T-bill rates from A. Damodaran (NYU Stern); the Swedish side uses the Frennberg & Hansson (1992) broad Stockholm price index, their CPI index and short-term government bill yields, as republished in D. Waldenström's chapter in Sveriges Riksbank's 'Historical Monetary and Financial Statistics for Sweden, Volume II' (Tables A6.2 and A6.3) - the dividend-yield slider applies to this series too, and the table shows Swedish dividends actually averaged about 4.2% a year over 1930-1986. Splicing two indices at 1987 creates small seams (for example, Damodaran lists the 1987 S&P 500 total return as 5.81% while the modern index table used here says 5.25%), and the historical broad index is not identical to today's OMXS30. Inflation correction divides each year's value by that year's actual CPI in the same country — US CPI for the S&P 500, Swedish CPI for the OMXS30 — so the real series is shown in the starting year's purchasing power (the standard way to display real growth; both curves start at your starting amount). Yearly returns are reported as money-weighted returns (IRR), which stay honest when salary contributions flow in. Leverage adds borrowed money on top of the investment; each year the leveraged portfolio earns (1 + L) × market return minus L × that country's historical short-term interest rate (US 3-month Treasury bill / fed funds, Riksbank repo / STIBOR), and the borrowed share is reset annually.",
+    assumptions: ["The whole amount is invested and never withdrawn; no money is taken out", "The krona/dollar exchange rate is held constant at today's approximate rate (~9.9 SEK per USD, Nov 2026) for the whole period; real exchange-rate swings (e.g. the 1992 krona collapse, or SEK weakness in 2022-2023) are deliberately ignored to keep the comparison about markets, not currencies", "Real (inflation-corrected) values are shown in the starting year's purchasing power; salary contributions are deflated by the same country's CPI", "Salary contributions are the slider percentage of each year's average salary, added at the start of the year (in reality they are spread over the months) and then earn that year's return. No citable average-wage series was available for 1930-1986, so the slider adds no salary money before 1987 - a 1930 start invests the lump sum only", "The average-salary series are approximate (SSA national average wage for the US from 1987; SCB average monthly wage × 12 for Sweden from 1987)", "The OMXS30 dividend yield is a constant estimate, not a year-by-year series (the Riksbank table shows Swedish dividends averaged about 4.2% over 1930-1986)", "Interest on the borrowed money is charged yearly and the leverage share is reset to the slider value every year (a leveraged ETF style, annually rebalanced)", "No fees, no taxes, no spreads, and no currency hedging", "The interest-rate series are approximate annual averages", "A leveraged pot that a bad year takes below zero is treated as wiped out (a margin call in reality): the pot is set to zero and stays there", "Before 1987 the stock series are historical academic indices spliced to the modern ones at 1987: small return differences at the seam are expected (two index families, e.g. the 1987 S&P 500 total return is 5.81% in Damodaran vs 5.25% in the modern table)", "US inflation 1930-1986 is computed from the Minneapolis Fed CPI table (annual averages), which differs by up to ~0.5 points from recomputed BLS figures"],
     references: [
       "OMX Stockholm 30 — annual returns table (Wikipedia, from Yahoo Finance historical data): https://en.wikipedia.org/wiki/OMX_Stockholm_30",
       "S&P 500 annual total returns (dividends reinvested), e.g. Slickcharts S&P 500 returns by year: https://www.slickcharts.com/sp500/returns",
@@ -268,6 +279,9 @@ const SIM = {
       "US short-term interest rates (3-month Treasury bill / effective fed funds), FRED, Federal Reserve Bank of St. Louis: https://fred.stlouisfed.org/",
       "Swedish repo rate history, Sveriges Riksbank: https://www.riksbank.se/en-gb/interest-rates-and-exchange-rate/repo-rate-history/",
       "USD/SEK exchange rate, Federal Reserve H.10 release (Swedish kronor per dollar): https://www.federalreserve.gov/releases/h10/hist/dat00_sd.htm",
+      "S&P 500 total returns and 3-month T-bill rates 1928-2024, A. Damodaran (NYU Stern), Historical Returns on Stocks, Bonds and Bills: https://pages.stern.nyu.edu/~adamodar/New_Home_Page/datafile/histretSP.html",
+      "Swedish stock returns, CPI and short-term bill yields 1930-1986, Frennberg & Hansson (1992) as republished in D. Waldenström (2014), Swedish stock and bond returns 1856-2012, Sveriges Riksbank Historical Monetary and Financial Statistics vol 2, ch 6, Tables A6.2-A6.3: https://www.riksbank.se/globalassets/media/forskning/monetar-statistik/volym2/chapter6_-volume2_140613.pdf",
+      "US CPI annual averages 1913-1998, Federal Reserve Bank of Minneapolis, Consumer Price Index table: https://www.minneapolisfed.org/about-us/monetary-policy/inflation-calculator/consumer-price-index-1913-"
     ],
   },
 };
